@@ -1,0 +1,8 @@
+{
+  "manifest_version": 3,
+  "name": "Infinite 10-2 Timer",
+  "version": "1.0",
+  "permissions": ["alarms", "notifications", "storage", "offscreen"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_popup": "popup.html" }
+}
