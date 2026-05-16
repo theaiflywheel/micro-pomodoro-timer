@@ -1,14 +1,25 @@
 const WORK_MINS = 10;
 const BREAK_MINS = 2;
 
+// Set the initial state to Break when the extension is installed
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.local.set({ 
+    isRunning: false, 
+    mode: "BREAK", 
+    timeLeft: BREAK_MINS * 60 
+  });
+});
+
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.action === "start") {
-    chrome.storage.local.set({ isRunning: true, mode: "WORK", timeLeft: WORK_MINS * 60 });
+    // Start with the Break time immediately
+    chrome.storage.local.set({ isRunning: true, mode: "BREAK", timeLeft: BREAK_MINS * 60 });
     chrome.alarms.create("loopAlarm", { periodInMinutes: 1/60 });
   }
   if (msg.action === "stop") {
     chrome.alarms.clearAll();
-    chrome.storage.local.set({ isRunning: false, mode: "READY", timeLeft: WORK_MINS * 60 });
+    // Reset back to the Break starting point
+    chrome.storage.local.set({ isRunning: false, mode: "READY", timeLeft: BREAK_MINS * 60 });
   }
 });
 
@@ -19,16 +30,15 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     let mode = data.mode;
 
     if (nextTime <= 0) {
-      // TRIGGER BEEP
       playAlarmSound();
       
-      // INFINITE LOOP LOGIC
-      if (mode === "WORK") {
-        mode = "BREAK";
-        nextTime = BREAK_MINS * 60;
-      } else {
+      // Toggle logic: If was BREAK, go to WORK. If was WORK, go to BREAK.
+      if (mode === "BREAK") {
         mode = "WORK";
         nextTime = WORK_MINS * 60;
+      } else {
+        mode = "BREAK";
+        nextTime = BREAK_MINS * 60;
       }
     }
     chrome.storage.local.set({ timeLeft: nextTime, mode: mode });
